@@ -2,8 +2,6 @@
 // Created by admin on 2023/6/2.
 //
 #include "../main.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_thread.h>
 
 const char program_name[] = "demo6";
 const int program_birth_year = 2023;
@@ -474,8 +472,8 @@ int decode_interrupt_cb(void *ctx) {
 }
 
 /* this thread gets the stream from the disk or the network */
-int read_thread(VideoState *is) {
-
+int read_thread(void *src) {
+    VideoState *is = (VideoState *)src;
     int err, i, ret;
     SDL_mutex *wait_mutex = nullptr;
     AVFormatContext *ic = nullptr;

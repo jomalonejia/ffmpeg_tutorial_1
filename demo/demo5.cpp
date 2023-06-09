@@ -2,8 +2,6 @@
 // Created by admin on 2023/6/2.
 //
 #include "../main.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_thread.h>
 
 void printError(const char *msg, int err) {
     char errStr[256] = {0};
@@ -325,12 +323,10 @@ static void sdl_audio_callback(void *userdata, Uint8 *stream, int len) {
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
 
     int ret = -1;
     int vIdx = -1, aIdx = -1;
-
-    char *src = NULL;
 
     AVFormatContext *fmtCtx = NULL;
     AVStream *aInStream = NULL;
@@ -371,7 +367,7 @@ int main(int argc, char *argv[]) {
 
     src = argv[1];*/
 
-    src = "../asset/juren-30s.mp4";
+    const char *src = "../asset/juren-30s.mp4";
 
     is = static_cast<VideoState *>(av_mallocz(sizeof(VideoState)));
     if (!is) {

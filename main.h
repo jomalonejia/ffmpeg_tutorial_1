@@ -39,4 +39,7 @@ extern "C" {
 #include <libavfilter/avfilter.h>
 }
 
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_thread.h>
+
 #endif //PROJ_1_MAIN_H

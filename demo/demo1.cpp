@@ -187,7 +187,7 @@ void Decoder::start() {
     } while (false);
 }
 
-int main() {
+int main(int argc, char **argv) {
     const char *url = "../asset/Iron_Man-Trailer_HD.mp4";
     Wrapper v_wrapper(new Decoder(url, AVMEDIA_TYPE_VIDEO));
     Wrapper a_wrapper(new Decoder(url, AVMEDIA_TYPE_AUDIO));

@@ -2,8 +2,6 @@
 // Created by admin on 2023/6/2.
 //
 #include "../main.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_thread.h>
 
 void printError(const char *msg, int err) {
     char errStr[256] = {0};
@@ -496,7 +494,7 @@ void demo4::run() {
     } while (false);
 }
 
-int main(int argv, char **args) {
+int main(int argc, char **argv) {
     //const char *url_in = "../asset/small_bunny_1080p_60fps.mp4";
     const char *url_in = "../asset/juren-30s.mp4";
 

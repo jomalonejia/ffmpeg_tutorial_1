@@ -2,8 +2,6 @@
 // Created by admin on 2023/6/2.
 //
 #include "../main.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_thread.h>
 
 void printError(const char *msg, int err) {
     char errStr[256] = {0};

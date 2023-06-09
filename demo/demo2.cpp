@@ -12,7 +12,7 @@ void printError(const char *msg, int err) {
 }
 
 
-int main() {
+int main(int argc, char **argv) {
     const char *url_in = "../asset/small_bunny_1080p_60fps.mp4";
     const char *url_out = "../asset/output1.ppm";
     AVMediaType m_avMediaType_v = AVMEDIA_TYPE_VIDEO;
