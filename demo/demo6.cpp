@@ -1438,6 +1438,17 @@ static int stream_has_enough_packets(AVStream *st, int stream_id, PacketQueue *q
 
 /* this thread gets the stream from the disk or the network */
 int read_thread(void *src) {
+    SDL_AudioSpec audioSpec;
+    audioSpec.freq = 44100;
+    audioSpec.format = AUDIO_S16SYS;
+    audioSpec.channels = 2;
+    audioSpec.silence = 0;
+    audioSpec.samples = 1024;
+    // 因为是推模式，所以这里为 nullptr
+    audioSpec.callback = nullptr;
+
+    SDL_AudioDeviceID deviceId;
+
     VideoState *is = (VideoState *) src;
     int err, i, ret;
     SDL_mutex *wait_mutex = nullptr;
@@ -1517,10 +1528,6 @@ int read_thread(void *src) {
         if (show_status) {
             av_dump_format(ic, 0, is->filename, 0);
         }
-
-        //TODO: MOCK abort_request
-        is->abort_request = 1;
-
 
         for (i = 0; i < ic->nb_streams; i++) {
             AVStream *st = ic->streams[i];
