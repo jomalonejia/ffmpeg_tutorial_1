@@ -1672,8 +1672,6 @@ int read_thread(void *src) {
                 av_packet_unref(pkt);
             }
         }
-
-
     } while (0);
 
     if (ic && !is->ic) {
