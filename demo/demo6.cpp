@@ -998,15 +998,17 @@ void sdl_audio_callback(void *opaque, Uint8 *stream, int len) {
             is->audio_buf_index = 0;
         }
         len1 = is->audio_buf_size - is->audio_buf_index;
-        if (len1 > len)
+        if (len1 > len) {
             len1 = len;
-        if (!is->muted && is->audio_buf && is->audio_volume == SDL_MIX_MAXVOLUME)
+        }
+        if (!is->muted && is->audio_buf && is->audio_volume == SDL_MIX_MAXVOLUME) {
             memcpy(stream, (uint8_t *) is->audio_buf + is->audio_buf_index, len1);
-        else {
+        } else {
             memset(stream, 0, len1);
-            if (!is->muted && is->audio_buf)
+            if (!is->muted && is->audio_buf) {
                 SDL_MixAudioFormat(stream, (uint8_t *) is->audio_buf + is->audio_buf_index, AUDIO_S16SYS, len1,
                                    is->audio_volume);
+            }
         }
         len -= len1;
         stream += len1;
@@ -1059,8 +1061,8 @@ static int audio_open(void *opaque, AVChannelLayout *wanted_channel_layout, int 
     wanted_spec.userdata = opaque;
     while (!(audio_dev = SDL_OpenAudioDevice(nullptr, 0, &wanted_spec, &spec,
                                              SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE))) {
-        av_log(nullptr, AV_LOG_WARNING, "SDL_OpenAudio (%d channels, %d Hz): %s\n",
-               wanted_spec.channels, wanted_spec.freq, SDL_GetError());
+        av_log(nullptr, AV_LOG_WARNING, "SDL_OpenAudio (%d channels, %d Hz): %s\n", wanted_spec.channels,
+               wanted_spec.freq, SDL_GetError());
         wanted_spec.channels = next_nb_channels[FFMIN(7, wanted_spec.channels)];
         if (!wanted_spec.channels) {
             wanted_spec.freq = next_sample_rates[next_sample_rate_idx--];
@@ -1268,6 +1270,10 @@ int stream_component_open(VideoState *is, int stream_index) {
 
         if (fast) {
             avctx->flags2 |= AV_CODEC_FLAG2_FAST;
+        }
+
+        if ((ret = avcodec_open2(avctx, codec, &opts)) < 0) {
+            break;
         }
 
         is->eof = false;
@@ -1738,9 +1744,9 @@ VideoState *stream_open(const char *filename,
 
         //TODO: init_clock
 
-        /*init_clock(&is->vidclk, &is->videoq.serial);
+        init_clock(&is->vidclk, &is->videoq.serial);
         init_clock(&is->audclk, &is->audioq.serial);
-        init_clock(&is->extclk, &is->extclk.serial);*/
+        init_clock(&is->extclk, &is->extclk.serial);
 
         //is->audio_clock_serial = -1;
 
@@ -1750,8 +1756,8 @@ VideoState *stream_open(const char *filename,
         if (startup_volume > 100)
             av_log(nullptr, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n", startup_volume);
         startup_volume = av_clip(startup_volume, 0, 100);
-        startup_volume = av_clip(SDL_MIX_MAXVOLUME * startup_volume / 100, 0, SDL_MIX_MAXVOLUME);
-        is->audio_volume = startup_volume;*/
+        startup_volume = av_clip(SDL_MIX_MAXVOLUME * startup_volume / 100, 0, SDL_MIX_MAXVOLUME);*/
+        is->audio_volume = startup_volume;
 
         is->muted = false;
         is->av_sync_type = av_sync_type;

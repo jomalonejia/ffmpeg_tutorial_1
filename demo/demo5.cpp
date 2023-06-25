@@ -1,3 +1,4 @@
+/*
 //
 // Created by admin on 2023/6/2.
 //
@@ -359,13 +360,15 @@ int main(int argc, char **argv) {
 
     av_log_set_level(AV_LOG_DEBUG);
 
+*/
 /*    //1. 判断输入参数
     if (argc < 2) { //argv[0], simpleplayer, argv[1] src
         av_log(NULL, AV_LOG_INFO, "arguments must be more than 2!\n");
         exit(-1);
     }
 
-    src = argv[1];*/
+    src = argv[1];*//*
+
 
     const char *src = "../asset/juren-30s.mp4";
 
@@ -619,4 +622,4 @@ int main(int argc, char **argv) {
     SDL_Quit();
 
     return ret;
-}
+}*/
