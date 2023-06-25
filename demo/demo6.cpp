@@ -477,7 +477,7 @@ int packet_queue_init(PacketQueue *q) {
 
 void packet_queue_start(PacketQueue *q) {
     SDL_LockMutex(q->mutex);
-    q->abort_request = 0;
+    q->abort_request = false;
     q->serial++;
     SDL_UnlockMutex(q->mutex);
 }
@@ -1444,17 +1444,6 @@ static int stream_has_enough_packets(AVStream *st, int stream_id, PacketQueue *q
 
 /* this thread gets the stream from the disk or the network */
 int read_thread(void *src) {
-    SDL_AudioSpec audioSpec;
-    audioSpec.freq = 44100;
-    audioSpec.format = AUDIO_S16SYS;
-    audioSpec.channels = 2;
-    audioSpec.silence = 0;
-    audioSpec.samples = 1024;
-    // 因为是推模式，所以这里为 nullptr
-    audioSpec.callback = nullptr;
-
-    SDL_AudioDeviceID deviceId;
-
     VideoState *is = (VideoState *) src;
     int err, i, ret;
     SDL_mutex *wait_mutex = nullptr;
