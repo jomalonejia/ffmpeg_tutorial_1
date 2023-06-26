@@ -188,11 +188,18 @@ void Decoder::start() {
 }
 
 int main(int argc, char **argv) {
-    const char *url = "../asset/Iron_Man-Trailer_HD.mp4";
+    /*const char *url = "../asset/Iron_Man-Trailer_HD.mp4";
     Wrapper v_wrapper(new Decoder(url, AVMEDIA_TYPE_VIDEO));
     Wrapper a_wrapper(new Decoder(url, AVMEDIA_TYPE_AUDIO));
 
     v_wrapper.start();
-    a_wrapper.start();
+    a_wrapper.start();*/
+    /*std::cout << (1024 & (1 << 10));
+    std::cout << (512 & (1 << 9));*/
+    int i = 10;
+    do {
+        std::cout << i + "\n";
+        i--;
+    } while (i >= 0);
     return 0;
 }

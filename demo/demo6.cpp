@@ -159,11 +159,11 @@ public:
 
     SDL_Thread *read_tid;
     const AVInputFormat *iformat;
-    int abort_request = 0;
+    bool abort_request = false;
     int force_refresh;
     int paused;
     int last_paused;
-    int queue_attachments_req;
+    bool queue_attachments_req;
     int seek_req;
     int seek_flags;
     int64_t seek_pos;
@@ -285,7 +285,7 @@ static int genpts = 0;
 static int lowres = 0;
 static int decoder_reorder_pts = -1;
 static bool autoexit = true;
-static int exit_on_keydown;
+static bool exit_on_keydown = false;
 static int exit_on_mousedown;
 static int loop = 1;
 static int framedrop = -1;
@@ -296,7 +296,7 @@ static const char *subtitle_codec_name;
 static const char *video_codec_name;
 double rdftspeed = 0.02;
 static int64_t cursor_last_shown;
-static int cursor_hidden = 0;
+static bool cursor_hidden = false;
 static const char **vfilters_list = nullptr;
 static int nb_vfilters = 0;
 static char *afilters = nullptr;
@@ -1192,6 +1192,26 @@ int audio_thread(void *arg) {
     return ret;
 }
 
+int video_thread(void *arg) {
+    VideoState *is = static_cast<VideoState *>(arg);
+    int ret = 0;
+    AVFrame *frame = av_frame_alloc();
+
+    if(!frame){
+        return AVERROR(ENOMEM);
+    }
+
+    do {
+        //ret = get_video_frame(is, frame);
+        if (ret <= 0){
+            break;
+        }
+
+    } while (ret >= 0);
+
+    av_frame_free(&frame);
+    return 0;
+}
 
 /* open a given stream. Return 0 if OK */
 int stream_component_open(VideoState *is, int stream_index) {
@@ -1340,6 +1360,19 @@ int stream_component_open(VideoState *is, int stream_index) {
 
                 break;
             case AVMEDIA_TYPE_VIDEO:
+                is->video_stream = stream_index;
+                is->video_st = ic->streams[stream_index];
+
+                if ((ret = decoder_init(&is->viddec, avctx, &is->videoq, is->continue_read_thread)) < 0) {
+                    break;
+                }
+
+                if ((ret = decoder_start(&is->viddec, video_thread, "video_decoder", is)) < 0) {
+                    ret = 0;
+                    break;
+                }
+
+                is->queue_attachments_req = true;
                 break;
             default :
                 break;
@@ -1402,7 +1435,7 @@ void stream_component_close(VideoState *is, int stream_index) {
 
 void stream_close(VideoState *is) {
     /* XXX: use a special url_shutdown call to abort parse cleanly */
-    is->abort_request = 1;
+    is->abort_request = true;
     SDL_WaitThread(is->read_tid, nullptr);
 
     if (is->audio_stream >= 0) {
@@ -1440,6 +1473,14 @@ static int stream_has_enough_packets(AVStream *st, int stream_id, PacketQueue *q
            queue->abort_request ||
            (st->disposition & AV_DISPOSITION_ATTACHED_PIC) ||
            queue->nb_packets > MIN_FRAMES && (!queue->duration || av_q2d(st->time_base) * queue->duration > 1.0);
+}
+
+static void update_volume(VideoState *is, int sign, double step) {
+    double volume_level = is->audio_volume ? (20 * log(is->audio_volume / (double) SDL_MIX_MAXVOLUME) / log(10))
+                                           : -1000.0;
+    int new_volume = lrint(SDL_MIX_MAXVOLUME * pow(10.0, (volume_level + sign * step) / 20.0));
+    is->audio_volume = av_clip(is->audio_volume == new_volume ? (is->audio_volume + sign) : new_volume, 0,
+                               SDL_MIX_MAXVOLUME);
 }
 
 /* this thread gets the stream from the disk or the network */
@@ -1608,7 +1649,17 @@ int read_thread(void *src) {
             //todo:: pause
             //todo:: filter
             //todo:: seek
-            //todo:: attachment
+
+            if (is->queue_attachments_req) {
+                if (is->video_st && is->video_st->disposition & AV_DISPOSITION_ATTACHED_PIC) {
+                    if ((ret = av_packet_ref(pkt, &is->video_st->attached_pic)) < 0) {
+                        break;
+                    }
+                    packet_queue_put(&is->videoq, pkt);
+                    packet_queue_put_nullpacket(&is->videoq, pkt, is->video_stream);
+                }
+                is->queue_attachments_req = false;
+            }
 
             /* if the queue are full, no need to read more *//* if the queue are full, no need to read more */
             if (!infinite_buffer && (
@@ -1786,9 +1837,53 @@ static void do_exit(VideoState *is) {
     exit(0);
 }
 
+static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
+    double remaining_time = 0.0;
+    SDL_PumpEvents();
+    while (!SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
+        if (!cursor_hidden && av_gettime_relative() - cursor_last_shown > CURSOR_HIDE_DELAY) {
+            SDL_ShowCursor(0);
+            cursor_hidden = true;
+        }
+        if (remaining_time > 0.0) {
+            av_usleep((int64_t) (remaining_time * 1000000.0));
+        }
+        remaining_time = REFRESH_RATE;
+        if (is->show_mode != SHOW_MODE_NONE && (!is->paused || is->force_refresh)) {
+            //video_refresh(is, &remaining_time);
+        }
+        SDL_PumpEvents();
+    }
+}
+
 void event_loop(VideoState *cur_stream) {
-    while (!cur_stream->abort_request) {
-        SDL_Delay(100);
+    SDL_Event event;
+    while (true) {
+        refresh_loop_wait_event(cur_stream, &event);
+        switch (event.type) {
+            case SDL_KEYDOWN:
+                if (exit_on_keydown || event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_q) {
+                    do_exit(cur_stream);
+                    break;
+                }
+
+                if (!cur_stream->width) {
+                    //TODO:: now we do not have a window tmp
+                    //continue;
+                }
+                switch (event.key.keysym.sym) {
+                    case SDLK_0:
+                        update_volume(cur_stream, 1, SDL_VOLUME_STEP);
+                        break;
+                    case SDLK_KP_DIVIDE:
+                    case SDLK_9:
+                        update_volume(cur_stream, -1, SDL_VOLUME_STEP);
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
     }
 }
 
