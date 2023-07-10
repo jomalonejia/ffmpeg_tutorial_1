@@ -33,6 +33,9 @@
 
 .idea
 cmake-build-debug
+CMakeLists.txt
+.gitignore
+asset
 
 
 
