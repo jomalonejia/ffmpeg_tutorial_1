@@ -3,7 +3,7 @@ project(ffmpeg_tutorial_1)
 
 set(CMAKE_CXX_STANDARD 23)
 
-set(FFMPEG_DIR C:/develop/msys2/home/admin/build/ffmpeg-shared)
+set(FFMPEG_DIR C:/develop/msys2/home/admin/build/ffmpeg-shared-debug)
 
 include_directories(${FFMPEG_DIR}/include)
 link_directories(${FFMPEG_DIR}/lib)
@@ -19,7 +19,10 @@ set_target_properties(avutil PROPERTIES IMPORTED_LOCATION ${FFMPEG_DIR}/lib/liba
 #[[add_executable(proj1 main.cpp)]]
 
 # add project/executables
-file(GLOB srcFiles main.cpp demo/*.cpp)
+file(GLOB srcFiles main.cpp
+        demo/*.cpp
+        test/*.cpp
+        process/*.cpp)
 foreach(src  ${srcFiles})
     get_filename_component(TARGET ${src} NAME)
     add_executable(${TARGET} ${src})
