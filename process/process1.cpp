@@ -1,12 +1,12 @@
 #include "../main.h"
 
-int main(int argc, char **argv) {
+
+int process(const std::string &inputUrl, const std::string &inputUrl2,const std::string &outputUrl) {
     int ret = 0;
 
     // 打开音频流
     AVFormatContext *ifmt_ctx = NULL;
-    const char *inputUrl = "../asset/5.mp3";
-    ret = avformat_open_input(&ifmt_ctx, inputUrl, NULL, NULL);
+    ret = avformat_open_input(&ifmt_ctx, inputUrl.c_str(), NULL, NULL);
     if (ret != 0) {
         printf("Couldn't open input stream.\n");
         return -1;
@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
         printf("Couldn't find stream information.\n");
         return -1;
     }
-    av_dump_format(ifmt_ctx, 0, inputUrl, 0);
+    av_dump_format(ifmt_ctx, 0, inputUrl.c_str(), 0);
     int audio_index = av_find_best_stream(ifmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
     AVStream *st = ifmt_ctx->streams[audio_index];
     const AVCodec *codec = NULL;
@@ -37,17 +37,16 @@ int main(int argc, char **argv) {
 
     // 打开视频流
     AVFormatContext *ifmt_ctx2 = NULL;
-    const char *inputUrl2 = "../asset/juren-30s.mp4";
-    ret = avformat_open_input(&ifmt_ctx2, inputUrl2, NULL, NULL);
+    ret = avformat_open_input(&ifmt_ctx2, inputUrl2.c_str(), NULL, NULL);
     if (ret != 0) {
-        printf("Couldn't open input stream %s.\n", inputUrl2);
+        printf("Couldn't open input stream %s.\n", inputUrl2.c_str());
         return -1;
     }
     if (avformat_find_stream_info(ifmt_ctx2, NULL) < 0) {
         printf("Couldn't find stream information.\n");
         return -1;
     }
-    av_dump_format(ifmt_ctx2, 0, inputUrl2, 0);
+    av_dump_format(ifmt_ctx2, 0, inputUrl2.c_str(), 0);
     int video_index = av_find_best_stream(ifmt_ctx2, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
     AVStream *st2 = ifmt_ctx2->streams[video_index];
     const AVCodec *codec2 = NULL;
@@ -69,9 +68,8 @@ int main(int argc, char **argv) {
 
 
     // 打开输出流
-    const char *outputUrl = "../asset/out.mp4";
     AVFormatContext *ofmt_ctx = NULL;
-    avformat_alloc_output_context2(&ofmt_ctx, NULL, "mpegts", outputUrl);
+    avformat_alloc_output_context2(&ofmt_ctx, NULL, "mpegts", outputUrl.c_str());
     if (!ofmt_ctx) {
         printf("Could not create output context\n");
         return -1;
@@ -99,13 +97,13 @@ int main(int argc, char **argv) {
         avcodec_parameters_copy(out->codecpar, codecpar);
         out->codecpar->codec_tag = 0;
     }
-    av_dump_format(ofmt_ctx, 0, outputUrl, 1);
+    av_dump_format(ofmt_ctx, 0, outputUrl.c_str(), 1);
 
     //Open output URL
     if (!(ofmt->flags & AVFMT_NOFILE)) {
-        ret = avio_open(&ofmt_ctx->pb, outputUrl, AVIO_FLAG_WRITE);
+        ret = avio_open(&ofmt_ctx->pb, outputUrl.c_str(), AVIO_FLAG_WRITE);
         if (ret < 0) {
-            printf("Could not open output URL '%s'", outputUrl);
+            printf("Could not open output URL '%s'", outputUrl.c_str());
             return -1;
         }
     }
@@ -131,13 +129,7 @@ int main(int argc, char **argv) {
             cur_pts_a = pkt->pts > 0 ? pkt->pts : cur_pts_a;
             cur_pts_unit = cur_pts_unit > 0 ? cur_pts_unit : cur_pts_a;
 
-            if(ret == AVERROR_EOF){
-                repeat = true;
-                avio_seek(ifmt_ctx->pb, 0, SEEK_SET);
-                avformat_seek_file(ifmt_ctx, audio_index, 0, 0, ifmt_ctx->streams[audio_index]->duration, 0);
-                av_packet_unref(pkt);
-                continue;
-            }else if(ret < 0){
+            if (ret < 0) {
                 break;
             }
 
@@ -150,7 +142,7 @@ int main(int argc, char **argv) {
                 av_packet_rescale_ts(pkt, in_stream->time_base, out_stream->time_base);
                 pkt->pos = -1;
                 duration_audio += pkt->duration;
-                if(repeat){
+                if (repeat) {
                     pkt->pts += cur_pts_a + (cur_pts_unit * i++);
                     pkt->dts = pkt->pts;
                 }
@@ -225,6 +217,35 @@ int main(int argc, char **argv) {
 
     av_write_trailer(ofmt_ctx);
 
+
+    return 0;
+}
+
+namespace fs = std::filesystem;
+
+int main(int argc, char **argv) {
+    /*for (auto &p: fs::directory_iterator("D:\\gg\\tmp")) {
+        const std::filesystem::path &path = p.path();
+        const std::string &filepath = p.path().string();
+        const std::string &filename = p.path().filename().string();
+
+        std::cout << filepath << filename << std::endl;
+    }*/
+    int audio_i = 1;
+    for (auto &p: fs::directory_iterator("D:\\gg\\tmp")) {
+        if(audio_i > 5){
+            audio_i = 1;
+        }
+        //std::cout << p.path() << "\n";
+        const std::string &filepath = p.path().string();
+        const std::string &filename = p.path().filename().string();
+        if(filename.contains(".mp4")){
+            const std::string &outputName = "../asset1/new-"+filename;
+            const std::string &audioName = "../asset/" + std::to_string(audio_i++) + ".mp3";
+            std::cout << audioName << filepath << filename << outputName;
+            process(audioName, filepath,outputName);
+        }
+    }
 
     return 0;
 }

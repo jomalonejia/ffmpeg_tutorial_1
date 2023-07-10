@@ -9,6 +9,10 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <filesystem>
+#include <windows.h>
+#include <time.h>
+
 
 extern "C" {
 #include <libavutil/log.h>
